@@ -16,6 +16,8 @@
 #include "file.h"
 #include "fcntl.h"
 
+uint64 shreyansh = 0;
+
 // Fetch the nth word-sized system call argument as a file descriptor
 // and return both the descriptor and the corresponding struct file.
 static int
@@ -74,9 +76,16 @@ sys_read(void)
 
   argaddr(1, &p);
   argint(2, &n);
+  ++shreyansh;
   if(argfd(0, 0, &f) < 0)
     return -1;
   return fileread(f, p, n);
+}
+
+uint64
+getreadcount()
+{
+  return shreyansh;
 }
 
 uint64

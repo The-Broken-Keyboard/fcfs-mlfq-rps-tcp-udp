@@ -85,6 +85,7 @@ extern uint64 sys_exit(void);
 extern uint64 sys_wait(void);
 extern uint64 sys_pipe(void);
 extern uint64 sys_read(void);
+extern uint64 sys_getreadcount();
 extern uint64 sys_kill(void);
 extern uint64 sys_exec(void);
 extern uint64 sys_fstat(void);
@@ -128,6 +129,7 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_waitx]   sys_waitx,
+[SYS_getreadcount] sys_getreadcount,
 };
 
 void
