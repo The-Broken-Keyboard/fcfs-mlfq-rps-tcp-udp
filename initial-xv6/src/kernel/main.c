@@ -3,7 +3,6 @@
 #include "memlayout.h"
 #include "riscv.h"
 #include "defs.h"
-
 volatile static int started = 0;
 
 // start() jumps here in supervisor mode on all CPUs.
@@ -25,6 +24,7 @@ main()
     plicinit();      // set up interrupt controller
     plicinithart();  // ask PLIC for device interrupts
     binit();         // buffer cache
+    initialize_queue();
     iinit();         // inode table
     fileinit();      // file table
     virtio_disk_init(); // emulated hard disk

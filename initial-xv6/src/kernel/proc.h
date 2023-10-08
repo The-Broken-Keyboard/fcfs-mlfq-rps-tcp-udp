@@ -116,9 +116,22 @@ struct proc
   struct file *ofile[NOFILE];  // Open files
   struct inode *cwd;           // Current directory
   char name[16];               // Process name (debugging)
+  int ticks;
+  int current_ticks;
+  uint64 handler;
+  int alarm;
+  struct trapframe* temp_tf;
   uint rtime;                  // How long the process ran for
   uint ctime;                  // When was the process created
   uint etime;                  // When did the process exited
+  uint queue_num;
+  uint inqueue;
+  uint queue_enter_time;
+  uint ticks_used;
+  int alarm_flag;
+  int no_retain;
+  struct proc* next_queue;
+  struct proc* prev_queue;
 };
 
 extern struct proc proc[NPROC];

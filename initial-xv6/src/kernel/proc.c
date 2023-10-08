@@ -152,6 +152,15 @@ found:
   p->rtime = 0;
   p->etime = 0;
   p->ctime = ticks;
+  p->inqueue=0;
+  p->queue_num=0;
+  p->ticks_used=0;
+  p->prev_queue=0;
+  p->next_queue=0;
+  p->no_retain=1;
+  // p->alarm=0;
+  p->current_ticks=0;
+  p->alarm_flag=0;
   return p;
 }
 
@@ -460,7 +469,7 @@ int wait(uint64 addr)
 //    via swtch back to the scheduler.
 void scheduler(void)
 {
-  struct proc *p;
+  // struct proc *p;
   struct cpu *c = mycpu();
 
   c->proc = 0;
@@ -468,7 +477,59 @@ void scheduler(void)
   {
     // Avoid deadlock by ensuring that devices can interrupt.
     intr_on();
+  #ifdef MLFQ
+  struct proc* p;
+  for (p = proc; p < &proc[NPROC]; p++) {
+    if (p->state == RUNNABLE ) {
+      if(p->inqueue==0)
+      insert_queue(p, p->queue_num,p->no_retain);
+    }
+  }
 
+  for (int i = 0; i < NUM_QUEUES ; i++) {
+    while (queues[i].totalProcess != 0) {
+      struct proc *p = queues[i].front;
+      remove_queue(p);
+      acquire(&p->lock);
+      p->state = RUNNING;
+      c->proc = p;
+      swtch(&c->context, &p->context);
+      c->proc = 0;
+      release(&p->lock);
+      break;
+    }
+  }
+  #endif
+#ifdef FCFS
+   
+    struct proc *first = 0;
+
+    for (struct proc *p = proc; p < &proc[NPROC]; p++)
+    {
+      acquire(&p->lock);
+      if (p->state == RUNNABLE && (!first || p->ctime < first->ctime))
+      {
+        if (first!=0)
+          release(&first->lock);
+        first = p;
+        continue;
+      }
+       release(&p->lock);
+    }
+    if(first==0)
+    continue;
+    if (first)
+    {
+      first->state = RUNNING;
+      c->proc = first;
+      swtch(&c->context, &first->context);
+      c->proc = 0;
+      release(&first->lock);
+    }
+
+#endif
+#ifdef RR
+    struct proc *p;
     for (p = proc; p < &proc[NPROC]; p++)
     {
       acquire(&p->lock);
@@ -487,6 +548,7 @@ void scheduler(void)
       }
       release(&p->lock);
     }
+#endif
   }
 }
 
@@ -699,6 +761,9 @@ void procdump(void)
     else
       state = "???";
     printf("%d %s %s", p->pid, state, p->name);
+    #ifdef MLFQ
+    printf(" %d", p->queue_num);
+    #endif
     printf("\n");
   }
 }
@@ -760,6 +825,8 @@ int waitx(uint64 addr, uint *wtime, uint *rtime)
 
 void update_time()
 {
+  // printf("%d\n", ticks);
+  // procdump();
   struct proc *p;
   for (p = proc; p < &proc[NPROC]; p++)
   {

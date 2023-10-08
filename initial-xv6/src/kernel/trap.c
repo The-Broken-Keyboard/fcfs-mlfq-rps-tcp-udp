@@ -5,7 +5,7 @@
 #include "spinlock.h"
 #include "proc.h"
 #include "defs.h"
-
+// extern struct queue queues[];
 struct spinlock tickslock;
 uint ticks;
 
@@ -67,6 +67,77 @@ void usertrap(void)
   else if ((which_dev = devintr()) != 0)
   {
     // ok
+    if (which_dev == 2)
+    {
+
+      if (p->alarm == 0 && p->alarm_flag)
+      {
+
+        struct trapframe *tf = kalloc();
+        memmove(tf, p->trapframe, PGSIZE);
+        p->temp_tf = tf;
+
+        p->current_ticks++;
+        if (p->current_ticks >= p->ticks)
+        {
+
+          p->alarm = 1;
+          p->trapframe->epc = p->handler;
+        }
+      }
+
+#ifdef MLFQ
+      struct proc *temp;
+      for (temp = proc; temp < &proc[NPROC]; temp++)
+      {
+        if (temp->state == RUNNABLE && temp->inqueue)
+        {
+          if (temp->queue_num != 0)
+          {
+            if (ticks - temp->queue_enter_time >= AGE)
+            {
+              remove_queue(temp);
+              temp->queue_num = temp->queue_num - 1;
+              temp->no_retain = 1;
+              temp->ticks_used = 0;
+              insert_queue(temp, temp->queue_num, temp->no_retain);
+            }
+          }
+        }
+      }
+      p->ticks_used++;
+      if (p->ticks_used >= queues[p->queue_num].slicetime)
+      { 
+
+        if (p->queue_num < NUM_QUEUES - 1)
+        {
+          p->queue_num = p->queue_num + 1;
+          p->ticks_used = 0;
+          p->no_retain = 1;
+          if (killed(p))
+            exit(-1);
+          yield();
+        }
+        else
+        {
+          p->no_retain = 0;
+          if (killed(p))
+            exit(-1);
+          yield();
+        }
+        usertrapret();
+        return;
+      }
+      else if (p->ticks_used < queues[p->queue_num].slicetime)
+      {
+        
+        p->no_retain = 0;
+        usertrapret();
+        return;
+      }
+      
+#endif
+    }
   }
   else
   {
@@ -78,9 +149,11 @@ void usertrap(void)
   if (killed(p))
     exit(-1);
 
-  // give up the CPU if this is a timer interrupt.
+// give up the CPU if this is a timer interrupt.
+#ifdef RR
   if (which_dev == 2)
     yield();
+#endif
 
   usertrapret();
 }
@@ -152,9 +225,10 @@ void kerneltrap()
   }
 
   // give up the CPU if this is a timer interrupt.
+  // #ifdef RR
   if (which_dev == 2 && myproc() != 0 && myproc()->state == RUNNING)
     yield();
-
+  // #endif
   // the yield() may have caused some traps to occur,
   // so restore trap registers for use by kernelvec.S's sepc instruction.
   w_sepc(sepc);

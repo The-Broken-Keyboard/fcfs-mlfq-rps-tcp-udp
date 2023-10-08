@@ -8,7 +8,7 @@ struct spinlock;
 struct sleeplock;
 struct stat;
 struct superblock;
-
+struct queuenode;
 // bio.c
 void            binit(void);
 struct buf*     bread(uint, uint);
@@ -191,5 +191,17 @@ void            update_time(void);
 
 uint64 getreadcount();
 
+//queue.c
+struct queue{
+    struct proc* front;
+    struct proc* rear;
+    uint totalProcess;
+    uint slicetime;
+};
+
+extern struct queue queues[4];
+void initialize_queue();
+void insert_queue(struct proc* p,uint queue_num,int flag);
+void remove_queue(struct proc*p);
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))
