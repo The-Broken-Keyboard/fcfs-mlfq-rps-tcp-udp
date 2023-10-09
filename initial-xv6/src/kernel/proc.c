@@ -485,9 +485,9 @@ void scheduler(void)
       insert_queue(p, p->queue_num,p->no_retain);
     }
   }
-
-  for (int i = 0; i < NUM_QUEUES ; i++) {
-    while (queues[i].totalProcess != 0) {
+ int found=0;
+  for (int i = 0; i < NUM_QUEUES && !found ; i++) {
+    while (queues[i].totalProcess != 0 && !found) {
       struct proc *p = queues[i].front;
       remove_queue(p);
       acquire(&p->lock);
@@ -496,7 +496,7 @@ void scheduler(void)
       swtch(&c->context, &p->context);
       c->proc = 0;
       release(&p->lock);
-      break;
+      found=1;
     }
   }
   #endif
@@ -825,8 +825,8 @@ int waitx(uint64 addr, uint *wtime, uint *rtime)
 
 void update_time()
 {
-  // printf("%d\n", ticks);
-  // procdump();
+  printf("%d\n", ticks);
+  procdump();
   struct proc *p;
   for (p = proc; p < &proc[NPROC]; p++)
   {
