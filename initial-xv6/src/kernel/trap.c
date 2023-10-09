@@ -99,20 +99,22 @@ void usertrap(void)
               remove_queue(temp);
               temp->queue_num = temp->queue_num - 1;
               temp->no_retain = 1;
+              temp->fr = 1;
               temp->ticks_used = 0;
-              insert_queue(temp, temp->queue_num, temp->no_retain);
+              insert_queue(temp, temp->queue_num, temp->no_retain,temp->fr);
             }
           }
         }
       }
       p->ticks_used++;
       if (p->ticks_used >= queues[p->queue_num].slicetime)
-      { 
+      {
 
         if (p->queue_num < NUM_QUEUES - 1)
         {
           p->queue_num = p->queue_num + 1;
           p->ticks_used = 0;
+          p->fr = 1;
           p->no_retain = 1;
           if (killed(p))
             exit(-1);
@@ -121,6 +123,7 @@ void usertrap(void)
         else
         {
           p->no_retain = 0;
+          p->fr = 1;
           if (killed(p))
             exit(-1);
           yield();
@@ -130,12 +133,36 @@ void usertrap(void)
       }
       else if (p->ticks_used < queues[p->queue_num].slicetime)
       {
-        
+
         p->no_retain = 0;
+        // printf("hello myself %d process\n",p->pid);
+        p->fr = 0;
+        for (struct proc *temp = proc; temp < &proc[NPROC]; temp++)
+        {
+          if (temp->state == RUNNABLE && temp->queue_num < p->queue_num)
+          {
+            p->fr = 0;
+            if (killed(p))
+              exit(-1);
+
+            yield();
+            usertrapret();
+            return;
+          }
+        }
+        // for (int i = 0; i < p->queue_num; i++)
+        // {
+        //   if (queues[i].totalProcess != 0)
+        //   {
+        //     if (killed(p))
+        //       exit(-1);
+        //     yield();
+        //   }
+        // }
         usertrapret();
         return;
       }
-      
+
 #endif
     }
   }

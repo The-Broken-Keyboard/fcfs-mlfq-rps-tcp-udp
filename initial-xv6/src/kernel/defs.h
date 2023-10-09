@@ -201,7 +201,7 @@ struct queue{
 
 extern struct queue queues[4];
 void initialize_queue();
-void insert_queue(struct proc* p,uint queue_num,int flag);
+void insert_queue(struct proc *p, uint queue_num, int flag,int fr);
 void remove_queue(struct proc*p);
 // number of elements in fixed-size array
 #define NELEM(x) (sizeof(x)/sizeof((x)[0]))

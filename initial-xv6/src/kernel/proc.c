@@ -158,9 +158,10 @@ found:
   p->prev_queue=0;
   p->next_queue=0;
   p->no_retain=1;
-  // p->alarm=0;
+  p->alarm=0;
   p->current_ticks=0;
   p->alarm_flag=0;
+  p->fr=1;
   return p;
 }
 
@@ -482,12 +483,12 @@ void scheduler(void)
   for (p = proc; p < &proc[NPROC]; p++) {
     if (p->state == RUNNABLE ) {
       if(p->inqueue==0)
-      insert_queue(p, p->queue_num,p->no_retain);
+      insert_queue(p, p->queue_num,p->no_retain,p->fr);
     }
   }
-
-  for (int i = 0; i < NUM_QUEUES ; i++) {
-    while (queues[i].totalProcess != 0) {
+ int found=0;
+  for (int i = 0; i < NUM_QUEUES && !found ; i++) {
+    while (queues[i].totalProcess != 0 && !found) {
       struct proc *p = queues[i].front;
       remove_queue(p);
       acquire(&p->lock);
@@ -496,7 +497,7 @@ void scheduler(void)
       swtch(&c->context, &p->context);
       c->proc = 0;
       release(&p->lock);
-      break;
+      found=1;
     }
   }
   #endif

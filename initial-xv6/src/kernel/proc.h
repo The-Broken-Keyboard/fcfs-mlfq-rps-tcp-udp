@@ -132,6 +132,7 @@ struct proc
   int no_retain;
   struct proc* next_queue;
   struct proc* prev_queue;
+  int fr;
 };
 
 extern struct proc proc[NPROC];

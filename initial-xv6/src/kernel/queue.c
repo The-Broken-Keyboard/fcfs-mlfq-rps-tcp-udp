@@ -33,38 +33,73 @@ void initialize_queue()
             queues[i].slicetime = 15;
     }
 }
-void insert_queue(struct proc *p, uint queue_num, int flag)
+void insert_queue(struct proc *p, uint queue_num, int flag,int fr)
 {
-    if (queues[queue_num].rear == 0)
+    if (fr == 1)
     {
-        queues[queue_num].rear = p;
-        p->next_queue = 0;
-        p->prev_queue = 0;
-        if (flag == 1)
+        if (queues[queue_num].rear == 0)
         {
-            p->queue_enter_time = ticks;
-            p->ticks_used = 0;
+            queues[queue_num].rear = p;
+            p->next_queue = 0;
+            p->prev_queue = 0;
+            if (flag == 1)
+            {
+                p->queue_enter_time = ticks;
+                p->ticks_used = 0;
+            }
+            p->queue_num = queue_num;
+            p->inqueue = 1;
+            if (queues[queue_num].front == 0)
+                queues[queue_num].front = p;
+            queues[queue_num].totalProcess++;
         }
-        p->queue_num = queue_num;
-        p->inqueue = 1;
-        if (queues[queue_num].front == 0)
-            queues[queue_num].front = p;
-        queues[queue_num].totalProcess++;
+        else
+        {
+            p->next_queue = 0;
+            p->prev_queue = queues[queue_num].rear;
+            queues[queue_num].rear->next_queue = p;
+            queues[queue_num].rear = p;
+            if (flag == 1)
+            {
+                p->queue_enter_time = ticks;
+                p->ticks_used = 0;
+            }
+            p->queue_num = queue_num;
+            p->inqueue = 1;
+            queues[queue_num].totalProcess++;
+        }
     }
-    else
-    {
-        p->next_queue = 0;
-        p->prev_queue = queues[queue_num].rear;
-        queues[queue_num].rear->next_queue = p;
-        queues[queue_num].rear = p;
-        if (flag == 1)
+    else{
+        if(queues[queue_num].front==0)
         {
-            p->queue_enter_time = ticks;
-            p->ticks_used = 0;
+            queues[queue_num].front=p;
+            p->next_queue = 0;
+            p->prev_queue = 0;
+            if (flag == 1)
+            {
+                p->queue_enter_time = ticks;
+                p->ticks_used = 0;
+            }
+            p->queue_num = queue_num;
+            p->inqueue = 1;
+            if (queues[queue_num].rear == 0)
+                queues[queue_num].rear = p;
+            queues[queue_num].totalProcess++;
         }
-        p->queue_num = queue_num;
-        p->inqueue = 1;
-        queues[queue_num].totalProcess++;
+        else{
+            p->next_queue=queues[queue_num].front;
+            queues[queue_num].front->prev_queue=p;
+            p->prev_queue=0;
+            queues[queue_num].front=p;
+            if(flag==1)
+            {
+                p->queue_enter_time=ticks;
+                p->ticks_used=0;
+            }
+            p->queue_num=queue_num;
+            p->inqueue=1;
+            queues[queue_num].totalProcess++;
+        }
     }
 }
 void remove_queue(struct proc *p)
@@ -98,7 +133,8 @@ void remove_queue(struct proc *p)
             temp->prev_queue = 0;
             temp->next_queue = 0;
             temp->inqueue = 0;
-            temp->no_retain=1;
+            temp->no_retain = 1;
+            temp->fr=1;
             queues[p->queue_num].totalProcess--;
             break;
         }
